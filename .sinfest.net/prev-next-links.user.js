@@ -1,6 +1,6 @@
 // ==UserScript==
 // @name           Sinfest prev/next links
-// @version        1.2
+// @version        1.3
 // @namespace      https://github.com/johan/user.js
 // @description    Adds links the previous and next Sinfest strip by clicking the left/right portion of the present strip, and adds access keys P and N (or . and ,) too for concenience (Alt+* on Windows, Ctrl+Opt+* on Mac, Shift+Escape followed by * in Opera).
 // @include        http://www.sinfest.net/archive_page*
@@ -8,7 +8,7 @@
 // @require        https://raw.github.com/gist/3886769/2bda951e516c93bd9625ed2d1b168a0a7d98a078/on.js
 // ==/UserScript==
 
-on({ dom: { comic: 'xpath  //img[contains(@src, "comics")]' // mandatory
+on({ dom: { comic: 'css    img[src*="comics"]'
           , next:  'xpath? //a[@href and img[@alt="Next"]]'
           , prev:  'xpath? //a[@href and img[@alt="Previous"]]'
           }
