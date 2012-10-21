@@ -22,7 +22,7 @@ function inline(a) {
   iframe.src = a.href;
   iframe.style.width = '100%';
   iframe.style.height = Math.min(window.innerHeight * 0.8, 748) + 'px';
-  iframe.style.border = '1px solid black';
+  iframe.style.outline = '1px solid rgba(0,0,0,0.25)';
   parent.insertBefore(iframe, a.nextSibling);
   parent.insertBefore(colon,  a.nextSibling);
   a.addEventListener('click', toggle.bind(iframe), false);
