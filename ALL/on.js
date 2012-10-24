@@ -79,12 +79,23 @@
    that is not found will instead result in that part of your DOM being null, or
    an empty array, in the case of a * selector.
 
+   After you have called on(), you may call on.dom to do page scraping later on,
+   returning whatever matched your selector(s) passed. Mandatory selectors which
+   failed to match at this point will return undefined, optional selectors null:
+
+     on.dom('xpath  //a[@id]') => undefined or <a id="...">
+     on.dom('xpath? //a[@id]') => null      or <a id="...">
+     on.dom('xpath+ //a[@id]') => undefined or [<a id="...">, <a id="...">, ...]
+     on.dom('xpath* //a[@id]') => []        or [<a id="...">, <a id="...">, ...]
+
+   A readable way to detect a failed mandatory match is on.dom(...) === on.FAIL;
+
  */
 
 function on(opts) {
   var Object_toString = Object.prototype.toString
     , Array_slice = Array.prototype.slice
-    , FAIL = on.FAIL || (function() {
+    , FAIL = 'dom' in on ? undefined : (function() {
         var tests =
               { path_re: { fn: test_regexp, this: location.pathname }
               , query:   { fn: test_query,  this: location.search }
@@ -111,10 +122,6 @@ function on(opts) {
               me[mine] = my[mine];
           on[name] = me.bind(test.this);
         }
-
-        return on.FAIL = new function() {
-          this.toString = this.valueOf = function() { return 'FAIL'; };
-        };
       })()
 
     , input = [] // args for the callback(s?) the script wants to run
@@ -137,7 +144,7 @@ function on(opts) {
       if (!test) throw new Error('did not grok rule "'+ name +'"!');
       result = test(rule);
       if (result === FAIL) return false; // the page doesn't satisfy all rules
-      if (result !== undefined) input.push(result);
+      input.push(result);
     }
   }
   catch(e) {
@@ -242,7 +249,7 @@ function on(opts) {
     if (context === undefined) context = this;
 
     // validate context:
-    if (context === null || context === FAIL) return context;
+    if (context === null || context === FAIL) return FAIL;
     if (isArray(context)) {
       for (results = [], i = 0; i < context.length; i++) {
         result = test_dom.call(context[i], spec);
