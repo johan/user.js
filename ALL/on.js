@@ -108,6 +108,7 @@ function on(opts) {
                                , 'xpath?': $X
                                , 'xpath+': one_or_more($x)
                                , 'xpath*': $x
+                               , 'xpath!': truthy($x)
                                }
                          }
               }
@@ -199,6 +200,10 @@ function on(opts) {
     return named;
   }
 
+  function truthy(fn) { return function(s) {
+    var x = fn.apply(this, arguments); return x || FAIL;
+  }; }
+
   function not_null(fn) { return function(s) {
     var x = fn.apply(this, arguments); return x !== null ? x : FAIL;
   }; }
@@ -235,7 +240,7 @@ function on(opts) {
     function lookup(rule) {
       if (typeof rule !== 'string')
         throw new Error('non-String dom match rule: '+ rule);
-      var match = /^((?:css|xpath)[?+*]?)\s+(.*)/.exec(rule), type, func;
+      var match = /^((?:css|xpath)[?+*!]?)\s+(.*)/.exec(rule), type, func;
       if (match) {
         type = match[1];
         rule = match[2];
