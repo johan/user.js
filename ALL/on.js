@@ -43,7 +43,7 @@
 
    (see http://goo.gl/ejtMD for a more thorough discussion of something similar)
 
-   The dom prtoperty is recursively defined so you can make nested structures.
+   The dom property is recursively defined so you can make nested structures.
    If you want a property that itself is an object full of matched things, pass
    an object of sub-dom-spec:s, instead of a string selector:
 
@@ -79,6 +79,12 @@
    that is not found will instead result in that part of your DOM being null, or
    an empty array, in the case of a * selector.
 
+   Finally, there is the xpath! keyword, which is similar to xpath, but it also
+   mandates that whatever is returned is truthy. This is useful when you use the
+   xpath functions returning strings, numbers and of course booleans, to assert
+   things about the pages you want to run on, like 'xpath! count(//img) = 0', if
+   you never want the script to run on pages with inline images, say.
+
    After you have called on(), you may call on.dom to do page scraping later on,
    returning whatever matched your selector(s) passed. Mandatory selectors which
    failed to match at this point will return undefined, optional selectors null:
@@ -93,8 +99,11 @@
  */
 
 function on(opts) {
+  console.warn('on', opts);
+  try {
   var Object_toString = Object.prototype.toString
     , Array_slice = Array.prototype.slice
+    , loaded = on.loaded = on.loaded || 0
     , FAIL = 'dom' in on ? undefined : (function() {
         var tests =
               { path_re: { fn: test_regexp, this: location.pathname }
@@ -131,11 +140,16 @@ function on(opts) {
     , script = get('name')
     , ready = get('ready')
     , load = get('load')
-    , name, rule, test, result
+    , pjax = get('pushstate')
+    , name, rule, test, result, pushState, retry
     ;
 
-  if (typeof ready !== 'function' && typeof load !== 'function')
+  if (typeof ready !== 'function' &&
+      typeof load  !== 'function' &&
+      typeof pjax  !== 'function') {
+    alert('no on function');
     throw new Error('on() needs at least a "ready" or "load" function!');
+  }
 
   try {
     for (name in rules) {
@@ -153,11 +167,44 @@ function on(opts) {
     return false;
   }
 
-  if (ready) ready.apply(opts, input.concat());
-  if (load) window.addEventListener('load', function() {
+  if (ready) {
+    on.loaded++;
     ready.apply(opts, input.concat());
+  }
+  if (load) window.addEventListener('load', function() {
+    on.loaded++;
+    load.apply(opts, input.concat());
   });
+  if (pjax && (pushState = history.pushState) &&
+      (on.pushState = on.pushState || []).indexOf(opts) === -1) {
+    console.log('pjax!');
+    on.pushState.push(opts); // make sure we don't re-register after navigation
+    retry = function after_pushState() {
+      rules = Object.create(opts);
+      rules.load = rules.pushstate = undefined;
+      rules.ready = pjax;
+      // if (on.loaded > 30) return;
+      console.info('again!', on(rules));
+    };
+    history.pushState = function on_pushState() {
+      setTimeout(retry, 0);
+      return pushState.apply(this, arguments);
+    };
+  }
   return input.concat(opts);
+
+/*  window.addEventListener('popstate', function onPopstate() {
+    console.log(on.loaded, opts);
+    try {
+    if (on.loaded < 2 && /AppleWebKit/.test(navigator.userAgent)) return;
+    console.log('pushstate cont:d');
+    window.removeEventListener('pushstate', onPopstate, false);
+    rules = Object.create(opts);
+    rules.load = rules.ready = undefined;
+    if (on.loaded > 30) return;
+    console.info('again!', on(rules));
+}catch(e){console.error('onPopstate error: ', e);}
+  }, false); */
 
   function get(x) { rules[x] = undefined; return opts[x]; }
   function isArray(x)  { return Object_toString.call(x) === '[object Array]'; }
@@ -283,5 +330,8 @@ function on(opts) {
     }
 
     throw new Error("dom spec was neither a String, Object nor Array: "+ spec);
+  }
+  } catch(e) {
+    console.error(e);
   }
 }
