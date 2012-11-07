@@ -99,7 +99,7 @@
  */
 
 function on(opts) {
-  console.warn('on', opts);
+  //console.info('on', opts);
   try {
   var Object_toString = Object.prototype.toString
     , Array_slice = Array.prototype.slice
