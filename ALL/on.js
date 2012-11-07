@@ -106,9 +106,9 @@ function on(opts) {
     , loaded = on.loaded = on.loaded || 0
     , FAIL = 'dom' in on ? undefined : (function() {
         var tests =
-              { path_re: { fn: test_regexp, this: location.pathname }
-              , query:   { fn: test_query,  this: location.search }
-              , dom:     { fn: test_dom,    this: document
+              { path_re: { fn: test_regexp, self: location.pathname }
+              , query:   { fn: test_query,  self: location.search }
+              , dom:     { fn: test_dom,    self: document
                          , my: { 'css':    not_null($C)
                                , 'css?':   $C
                                , 'css+':   one_or_more($c)
@@ -130,7 +130,7 @@ function on(opts) {
           if ((my = test.my))
             for (mine in my)
               me[mine] = my[mine];
-          on[name] = me.bind(test.this);
+          on[name] = me.bind(test.self);
         }
       })()
 
