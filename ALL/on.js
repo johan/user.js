@@ -103,7 +103,6 @@ function on(opts) {
   try {
   var Object_toString = Object.prototype.toString
     , Array_slice = Array.prototype.slice
-    , loaded = on.loaded = on.loaded || 0
     , FAIL = 'dom' in on ? undefined : (function() {
         var tests =
               { path_re: { fn: test_regexp, self: location.pathname }
@@ -120,6 +119,7 @@ function on(opts) {
                                , 'xpath!': truthy($x)
                                }
                          }
+              , inject: { fn: inject }
               }
           , name, test, me, my, mine
           ;
@@ -140,15 +140,22 @@ function on(opts) {
     , script = get('name')
     , ready = get('ready')
     , load = get('load')
-    , pjax = get('pushstate')
-    , name, rule, test, result, pushState, retry
+    , pushState = get('pushstate')
+    , pjax_event = get('pjaxevent')
+    , name, rule, test, result, retry
     ;
 
   if (typeof ready !== 'function' &&
       typeof load  !== 'function' &&
-      typeof pjax  !== 'function') {
+      typeof pushState !== 'function') {
     alert('no on function');
     throw new Error('on() needs at least a "ready" or "load" function!');
+  }
+
+  if (pushState && history.pushState &&
+      (on.pushState = on.pushState || []).indexOf(opts) === -1) {
+    on.pushState.push(opts); // make sure we don't re-register after navigation
+    initPushState(pushState, pjax_event);
   }
 
   try {
@@ -168,49 +175,59 @@ function on(opts) {
   }
 
   if (ready) {
-    on.loaded++;
     ready.apply(opts, input.concat());
   }
   if (load) window.addEventListener('load', function() {
-    on.loaded++;
     load.apply(opts, input.concat());
   });
-  if (pjax && (pushState = history.pushState) &&
-      (on.pushState = on.pushState || []).indexOf(opts) === -1) {
-    console.log('pjax!');
-    on.pushState.push(opts); // make sure we don't re-register after navigation
-    retry = function after_pushState() {
-      rules = Object.create(opts);
-      rules.load = rules.pushstate = undefined;
-      rules.ready = pjax;
-      // if (on.loaded > 30) return;
-      console.info('again!', on(rules));
-    };
-    history.pushState = function on_pushState() {
-      setTimeout(retry, 0);
-      return pushState.apply(this, arguments);
-    };
-  }
   return input.concat(opts);
-
-/*  window.addEventListener('popstate', function onPopstate() {
-    console.log(on.loaded, opts);
-    try {
-    if (on.loaded < 2 && /AppleWebKit/.test(navigator.userAgent)) return;
-    console.log('pushstate cont:d');
-    window.removeEventListener('pushstate', onPopstate, false);
-    rules = Object.create(opts);
-    rules.load = rules.ready = undefined;
-    if (on.loaded > 30) return;
-    console.info('again!', on(rules));
-}catch(e){console.error('onPopstate error: ', e);}
-  }, false); */
 
   function get(x) { rules[x] = undefined; return opts[x]; }
   function isArray(x)  { return Object_toString.call(x) === '[object Array]'; }
   function isObject(x) { return Object_toString.call(x) === '[object Object]'; }
   function array(a)    { return Array_slice.call(a, 0); } // array:ish => Array
   function arrayify(x) { return isArray(x) ? x : [x]; }  // non-array? => Array
+  function inject(fn, args) {
+    var script = document.createElement('script')
+      , parent = document.documentElement;
+    args = JSON.stringify(args || []).slice(1, -1);
+    script.textContent = '('+ fn +')('+ args +');';
+    parent.appendChild(script);
+    parent.removeChild(script);
+  }
+
+  function initPushState(callback, pjax_event) {
+    if (!history.pushState.armed) {
+      inject(function(pjax_event) {
+        function reportBack() {
+          var e = document.createEvent('Events');
+          e.initEvent('history.pushState', !'bubbles', !'cancelable');
+          document.dispatchEvent(e);
+        }
+        var pushState = history.pushState;
+        history.pushState = function on_pushState() {
+          if (pjax_event && window.$ && $.pjax)
+            $(document).one(pjax_event, reportBack);
+          else
+            setTimeout(reportBack, 0);
+          return pushState.apply(this, arguments);
+        };
+      }, [pjax_event]);
+      history.pushState.armed = pjax_event;
+    }
+
+    retry = function after_pushState() {
+      rules = Object.create(opts);
+      rules.load = rules.pushstate = undefined;
+      rules.ready = callback;
+      on(rules);
+    };
+
+    document.addEventListener('history.pushState', function() {
+      if (debug) console.log('on.pushstate', location.pathname);
+      retry();
+    }, false);
+  }
 
   function test_query(spec) {
     var q = unparam(this);
