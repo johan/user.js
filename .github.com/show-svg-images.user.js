@@ -15,28 +15,37 @@ var is_gist  = location.hostname === 'gist.github.com'
                        : '[data-path$=".svg/"] + .frames .file'
   , sel_num  = '.data > table td:not([width="100%"])'
   , sel_raw  = '.data > table td[width="100%"]'
-  , buttons  = 'grouped-button file-edit-link minibutton bigger lighter'
+  , buttons  = 'grouped-button minibutton bigger lighter'
   , A        = tag('a')
   ;
 
-on({ dom: [ 'css+ ' + sel_svgs
-          , { box: 'css .data'
-            , raw: 'css '+ sel_raw
-            , src: 'css '+ sel_raw +' .highlight'
-            , num: 'css '+ sel_num
-            , hdr: 'css .meta .actions'
-            }
-          ]
-   , ready: init
-   });
+if (!window.frameElement)
+  on({ dom: [ 'css+ ' + sel_svgs + ':not([augmented])' // only run once per svg
+            , { ctx: 'xpath .'
+              , box: 'css .data'
+              , raw: 'css '+ sel_raw
+              , src: 'css '+ sel_raw +' .highlight'
+              , num: 'css '+ sel_num
+              , hdr: 'css .meta .actions'
+              }
+            ]
+   //, load: function(){}
+   //, debug: true
+     , ready: init
+     , pjaxevent: 'pageUpdate' // fired by github, once a pjax page has rendered
+     , pushstate: init // pjax => runs for lots of urls during a page's lifetime
+     });
 
 function init(svgs) {
+  var n = svgs.length;
+  console.log('show-svg-images augmented '+ n +' svg image' + (n==1?'':'s'));
   svgs.forEach(function inline_image_and_add_header_links(svg, n, all) {
+    svg.ctx.setAttribute('augmented', 'show-svg-images.user.js');
     var th = $(svg.hdr)
       , td = $(svg.raw)
       , tw = $(svg.box).width()
-      , ai = A({ href: '#', click: show_as_image }, 'image/svg')
-      , at = A({ href: '#', click: show_as_text }, 'text/plain')
+      , ai = A({ href: '#image/svg', click: show_as_image }, 'image/svg')
+      , at = A({ href: '#text/plain', click: show_as_text }, 'text/plain')
       , viewbox, w, h;
 
     th.prepend(ai, at); // add header links
