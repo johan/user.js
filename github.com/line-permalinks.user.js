@@ -36,7 +36,7 @@ function permalink() {
     }
     if (!s[end])
       b -= 1; // it's a whole-line selection, e g: triple-clicked in Chrome
-    hash('#L'+ a + (a !== b ? '..'+b : ''));
+    hash('#L'+ a + (a !== b ? '-'+b : ''));
     $('*[id^=LC][style^="background-color:"]').css('background-color', '');
     while (a <= b)
       $('#LC'+ a++).css('background-color', 'rgb(255, 255, 204)');
