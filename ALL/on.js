@@ -325,8 +325,8 @@ function on(opts) {
     if (isArray(context)) {
       for (results = [], i = 0; i < context.length; i++) {
         result = test_dom.call(context[i], spec);
-        if (result === FAIL) return FAIL;
-        results.push(result);
+        if (result !== FAIL)
+          results.push(result);
       }
       return results;
     }
