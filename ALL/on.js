@@ -337,6 +337,7 @@ function on(opts) {
     if (typeof spec === 'string') return lookup.call(context, spec);
     if (isArray(spec)) {
       context = lookup.call(context, spec[0]);
+      if (context === null || context === FAIL) return context;
       return test_dom.call(context, spec[1]);
     }
     if (isObject(spec)) {
