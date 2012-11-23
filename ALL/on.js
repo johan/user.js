@@ -301,6 +301,9 @@ function on(opts) {
   //   * resolved for context [ context Selector, spec ]
   //   * an Object of spec(s) { property_name: spec, ... }
   function test_dom(spec, context) {
+    // returns FAIL if it turned out it wasn't a mandated match at this level
+    // returns null if it didn't find optional matches at this level
+    // returns Node or an Array of nodes, or a basic type from some XPath query
     function lookup(rule) {
       if (typeof rule !== 'string')
         throw new Error('non-String dom match rule: '+ rule);
