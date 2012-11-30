@@ -2,7 +2,7 @@
 // @name          Link through tl;dr titles
 // @namespace     https://github.com/johan/user.js
 // @require       https://gist.github.com/raw/3957352/d6a2ef12f034816848632131a1783daca55361dd/on.js
-// @description   Make tl;dr link through
+// @description   Make tl;dr link through to the actual post, so you don't have to hunt for the link.
 // @match         http://tldr.io/tldr/*
 // ==/UserScript==
 
